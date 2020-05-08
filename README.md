@@ -4,7 +4,7 @@ A GUI tool for configuring SenseCAP Sensor Hub via serial port.
 
 Supports Windows and MacOS.
 
-![sensecap](https://user-images.githubusercontent.com/5130185/76201223-e435c180-622d-11ea-9125-331c0df62a1f.png)
+![tool](https://user-images.githubusercontent.com/5130185/81410939-2ae36180-9174-11ea-9519-7a8065a72cd7.png)
 
 Check out `SenseCAP` [here](https://solution.seeedstudio.com/product).
 
