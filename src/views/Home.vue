@@ -332,6 +332,7 @@ export default {
       //stream parse
       stream: null,
       pauseParseLine: false,
+      customParseCallback: null,
       //ota
       currentVersion: '',
       newVersion: '',
@@ -396,14 +397,32 @@ export default {
     readFn() {
       ipcRenderer.send('serial-rx', '\r\nh')
     },
-    writeOne(cmd, value) {
-      ipcRenderer.send('serial-rx', cmd)
+    waitSomething(needle, timeout) {
+      return new Promise((resolve, reject) => {
+        let self = this
+        let h = setTimeout(() => {
+          reject(`wait "${needle}" timeout!`)
+          self.customParseCallback = null
+        }, timeout)
+        self.customParseCallback = (line) => {
+          if (line.includes(needle)) {
+            clearTimeout(h)
+            self.customParseCallback = null
+            resolve()
+          }
+        }
+      })
+    },
+    writeOne(cmd, value, needle, timeout) {
       return Promise.resolve().then(() => {
+        ipcRenderer.send('serial-rx', cmd)
+      }).then(() => {
         return delayMs(500)
       }).then(() => {
         ipcRenderer.send('serial-rx', value + '\r\n')
+        return this.waitSomething(needle, timeout)
       }).then(() => {
-        return delayMs(2000)
+        return delayMs(500)
       })
     },
     writeFn() {
@@ -450,39 +469,41 @@ export default {
       ipcRenderer.send('serial-rx', '\r\n')
       delayMs(500).then(() => {
         ipcRenderer.send('serial-rx', 'h')
-      }).then(() => {
-        return delayMs(500)
+        return this.waitSomething('Please Enter your command with Enter', 3000)
+      })
+      .then(() => {
+        return delayMs(100)
       })
       .then(() => { //device EUI
         this.pauseParseLine = false
-        if (needUpdateDeviceEUI) return this.writeOne('d', this.deviceEUI)
+        if (needUpdateDeviceEUI) return this.writeOne('d', this.deviceEUI, 'The new Device EUI is', 2000)
       })
       .then(() => { //app EUI
-        if (needUpdateAppEUI) return this.writeOne('a', this.appEUI)
+        if (needUpdateAppEUI) return this.writeOne('a', this.appEUI, 'The new App EUI is', 2000)
       })
       .then(() => { //app Key
-        if (needUpdateAppKey) return this.writeOne('k', this.appKey)
+        if (needUpdateAppKey) return this.writeOne('k', this.appKey, 'The new App Key is', 2000)
       })
       .then(() => { //data Interval
-        if (needUpdateDataInterval) return this.writeOne('i', this.dataInterval)
+        if (needUpdateDataInterval) return this.writeOne('i', this.dataInterval, 'Now the data interval is', 2000)
       })
       .then(() => { //server address
-        if (needUpdateServerAddr) return this.writeOne('s', this.serverAddr)
+        if (needUpdateServerAddr) return this.writeOne('s', this.serverAddr, 'New remote host', 2000)
       })
       .then(() => { //server port
-        if (needUpdateServerPort) return this.writeOne('p', this.serverPort)
+        if (needUpdateServerPort) return this.writeOne('p', this.serverPort, 'New remote port', 2000)
       })
       .then(() => { //username
-        if (needUpdateUsername) return this.writeOne('n', this.username)
+        if (needUpdateUsername) return this.writeOne('n', this.username, 'New user name', 2000)
       })
       .then(() => { //password
-        if (needUpdatePassword) return this.writeOne('m', this.password)
+        if (needUpdatePassword) return this.writeOne('m', this.password, 'New password', 2000)
       })
       .then(() => { //GPS
-        if (needUpdateGPS) return this.writeOne('g', this.enableGps ? 'Y' : 'N')
+        if (needUpdateGPS) return this.writeOne('g', this.enableGps ? 'Y' : 'N', 'New GPS Switch State', 2000)
       })
       .then(() => { //Ota prepub
-        if (needUpdateOta) return this.writeOne('o', this.enableOtaPrepub ? 'Y' : 'N')
+        if (needUpdateOta) return this.writeOne('o', this.enableOtaPrepub ? 'Y' : 'N', 'New OTA preview Switch State', 2000)
       })
       .then(() => { //read back finally to refresh the old value
         this.readFn()
@@ -525,6 +546,10 @@ export default {
       ipcRenderer.send('serial-rx', '\r\nf')
     },
     parseLine(line) {
+      if (this.customParseCallback) {
+        this.customParseCallback(line)
+      }
+
       if (this.pauseParseLine) return
 
       let found
