@@ -299,7 +299,7 @@ export default {
       serialPorts: [],
       serialOpened: false,
       connectAsConfigMode: false,
-      showHiddenCfg: true,
+      showHiddenCfg: false,
       //config fields
       labelAppEUI: 'App EUI',
       labelAppKey: 'App Key',
