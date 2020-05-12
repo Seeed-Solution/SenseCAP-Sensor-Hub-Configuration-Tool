@@ -520,8 +520,10 @@ export default {
       ipcRenderer.send('serial-rx', '\r\n')
       delayMs(500).then(() => {
         ipcRenderer.send('serial-rx', 'h')
-      }).then(() => {
-        return delayMs(500)
+        return this.waitSomething('Please Enter your command with Enter', 3000)
+      })
+      .then(() => {
+        return delayMs(100)
       })
       .then(() => { //update firmware
         this.pauseParseLine = true
