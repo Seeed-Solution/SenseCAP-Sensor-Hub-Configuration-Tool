@@ -1,7 +1,7 @@
 {
   "name": "sensecap_sensorhub_cfg_tool",
   "description": "SenseCAP Sensor Hub Configuration Tool",
-  "version": "1.0.3",
+  "version": "1.22.4",
   "homepage": "https://github.com/Seeed-Solution/SenseCAP-Sensor-Hub-Configuration-Tool",
   "repository": {
     "type": "git",
