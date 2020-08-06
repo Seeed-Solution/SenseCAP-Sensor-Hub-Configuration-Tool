@@ -3,6 +3,7 @@
   "en": {
     "text: connectAsConfigMode": "Enter configuration mode automatically on device's booted",
     "text: clear data confirm": "This will clear all the storaged measurements in the flash. Once confirmed, the bootloader will launch the Application Firmware and storaged measurements will be wiped out.",
+    "Maximum 32 chars allowed": "Maximum 32 non-whitespace chars",
     "end": "end"
   },
   "zh": {
@@ -18,6 +19,8 @@
     "Server Port": "端口",
     "Enable GPS": "使能GPS",
     "OTA Prepub": "使能OTA预发布固件",
+    "APN Username": "APN用户名",
+    "APN Password": "APN密码",
     "Hardware Version": "硬件版本",
     "Software Version": "软件版本",
     "Read": "读取",
@@ -36,7 +39,7 @@
     "Invalid LoRaWAN EUI (16 chars)": "无效的LoRaWAN EUI (16字符)",
     "Invalid LoRaPP EUI (32 chars)": "无效的LoRaPP EUI (32字符)",
     "Invalid domain": "不正确的域名格式",
-    "Maximum 32 chars allowed": "最多32个字符",
+    "Maximum 32 chars allowed": "最多32个(非空白)字符",
 
     "end": "结束"
   }
@@ -144,6 +147,24 @@
               outlined dense>
             </v-switch>
           </v-col>
+          <!-- APN for 4G -->
+          <v-col cols="12" md="12" class="py-0">
+            <v-text-field v-model="apn" :label="$t('APN')"
+              :rules="[rules.char32AllowEmtpy]" outlined dense>
+            </v-text-field>
+          </v-col>
+          <v-col cols="12" md="6" class="py-0">
+            <v-text-field v-model="apnUsername" :label="$t('APN Username')"
+              :rules="[rules.char32AllowEmtpy]"
+              outlined dense>
+            </v-text-field>
+          </v-col>
+          <v-col cols="12" md="6" class="py-0">
+            <v-text-field v-model="apnPassword" :label="$t('APN Password')"
+              :rules="[rules.char32AllowEmtpy]"
+              outlined dense>
+            </v-text-field>
+          </v-col>
           <!-- hw & sw info -->
           <v-col cols="12" md="6" class="py-0">
             <v-text-field v-model="hwVer" :label="$t('Hardware Version')" disabled outlined dense>
@@ -177,7 +198,7 @@
       <!-- 右半屏，console -->
       <v-col cols="6">
         <v-card outlined class="pl-2 pt-2">
-        <div style="height:650px" id="terminal"></div>
+        <div style="height:720px" id="terminal"></div>
         </v-card>
       </v-col>
     </v-row>
@@ -273,7 +294,7 @@ export default {
       eui16: value => (/^\w{16}$/.test(value)) || this.$t("Invalid LoRaWAN EUI (16 chars)"),
       eui32: value => (/^\w{32}$/.test(value)) || this.$t("Invalid LoRaPP EUI (32 chars)"),
       char32AllowEmtpy: value => {
-        if (value) return (/^[a-z0-9-_.]{1,32}$/i.test(value)) || this.$t("Maximum 32 chars allowed")
+        if (value) return (/^\S{1,32}$/i.test(value)) || this.$t("Maximum 32 chars allowed")
         else return true
       },
       domain: value => (/(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]/i.test(value)) || (/^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/.test(value)) || this.$t("Invalid domain"),
@@ -327,6 +348,12 @@ export default {
       enableGps2: true,
       enableOtaPrepub: false,
       enableOtaPrepub2: false,
+      apn: '',
+      apn2: '',
+      apnUsername: '',
+      apnUsername2: '',
+      apnPassword: '',
+      apnPassword2: '',
       hwVer: '',
       swVer: '',
       //stream parse
@@ -444,6 +471,9 @@ export default {
       let needUpdatePassword = (this.password !== this.password2)
       let needUpdateGPS = (this.enableGps !== this.enableGps2)
       let needUpdateOta = (this.enableOtaPrepub !== this.enableOtaPrepub2)
+      let needUpdateApn = (this.apn !== this.apn2)
+      let needUpdateApnUsername = (this.apnUsername !== this.apnUsername2)
+      let needUpdateApnPassword = (this.apnPassword !== this.apnPassword2)
       console.log({
         needUpdateDeviceEUI: needUpdateDeviceEUI,
         needUpdateAppEUI: needUpdateAppEUI,
@@ -454,12 +484,15 @@ export default {
         needUpdateUsername: needUpdateUsername,
         needUpdatePassword: needUpdatePassword,
         needUpdateGPS: needUpdateGPS,
-        needUpdateOta: needUpdateOta
+        needUpdateOta: needUpdateOta,
+        needUpdateApn: needUpdateApn,
+        needUpdateApnUsername: needUpdateApnUsername,
+        needUpdateApnPassword: needUpdateApnPassword
       })
 
       if (!(needUpdateDeviceEUI || needUpdateAppEUI || needUpdateAppKey || needUpdateDataInterval ||
             needUpdateServerAddr || needUpdateServerPort || needUpdateUsername || needUpdatePassword ||
-            needUpdateGPS || needUpdateOta)) {
+            needUpdateGPS || needUpdateOta || needUpdateApn || needUpdateApnUsername || needUpdateApnPassword)) {
         console.log('no need to write')
         this.writeLoading = false
         return
@@ -504,6 +537,15 @@ export default {
       })
       .then(() => { //Ota prepub
         if (needUpdateOta) return this.writeOne('o', this.enableOtaPrepub ? 'Y' : 'N', 'New OTA preview Switch State', 2000)
+      })
+      .then(() => { //APN
+        if (needUpdateApn) return this.writeOne('w', this.apn, 'New APN', 2000)
+      })
+      .then(() => { //APN username
+        if (needUpdateApnUsername) return this.writeOne('y', this.apnUsername, 'New APN username', 2000)
+      })
+      .then(() => { //APN password
+        if (needUpdateApnPassword) return this.writeOne('z', this.apnPassword, 'New APN password', 2000)
       })
       .then(() => { //read back finally to refresh the old value
         this.readFn()
@@ -662,6 +704,27 @@ export default {
         console.log('found OTA preview:', found[1])
         this.enableOtaPrepub = found[1] === 'Y' ? true : false
         this.enableOtaPrepub2 = this.enableOtaPrepub
+        return
+      }
+      found = line.match(/APN:\s+(\w+)/i)
+      if (found) {
+        console.log('found APN:', found[1])
+        this.apn = found[1]
+        this.apn2 = this.apn
+        return
+      }
+      found = line.match(/APN username:\s+(\w+)/i)
+      if (found) {
+        console.log('found APN username:', found[1])
+        this.apnUsername = found[1]
+        this.apnUsername2 = this.apnUsername
+        return
+      }
+      found = line.match(/APN password:\s+(\w+)/i)
+      if (found) {
+        console.log('found APN password:', found[1])
+        this.apnPassword = found[1]
+        this.apnPassword2 = this.apnPassword
         return
       }
       found = line.match(/Hardware version:\s+([vV0-9.]+)/i)

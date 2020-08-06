@@ -110,7 +110,7 @@ protocol.registerSchemesAsPrivileged([{scheme: 'app', privileges: { secure: true
 function createWindow () {
   // Create the browser window.
   let w = 1024
-  let h = 770
+  let h = 840
 
   if (process.platform === 'win32') {
     h += 30  //for menu bar
