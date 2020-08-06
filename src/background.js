@@ -121,7 +121,8 @@ function createWindow () {
     width: w,
     height: h,
     webPreferences: {
-      nodeIntegration: true
+      nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,
+      enableRemoteModule: true
     }
   })
 
