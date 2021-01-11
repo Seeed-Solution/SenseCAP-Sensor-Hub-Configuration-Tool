@@ -1,10 +1,8 @@
 // 'use strict'
 
+import installExtension, { VUEJS_DEVTOOLS } from 'electron-devtools-installer'
 import { app, protocol, BrowserWindow, shell, ipcMain, dialog } from 'electron'
-import {
-  createProtocol,
-  /* installVueDevtools */
-} from 'vue-cli-plugin-electron-builder/lib'
+import { createProtocol } from 'vue-cli-plugin-electron-builder/lib'
 const SerialPort = require('serialport')
 const Menu = require("electron-create-menu")
 import i18next from 'i18next'
@@ -28,6 +26,10 @@ autoUpdater.logger.transports.file.level = isDevelopment ? "debug" : "info"
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let win
+let winGeneral
+let winGeneralStartTimer
+let winSensor
+let winSensorStartTimer
 let sysLocale
 
 let serialPorts = []
@@ -73,6 +75,7 @@ async function translateMenu() {
       if (!isDevelopment) defaultMenu[3].submenu[2].showOn = 'neverMatch'
       defaultMenu[4].label = t('Window')
       defaultMenu[5].label = t('Help')
+      defaultMenu[5].showOn = ['darwin', 'win32', 'linux']
       defaultMenu[5].submenu.push({
         label: t('Report an issue'),
         click: () => {
@@ -93,24 +96,13 @@ if (process.platform === 'darwin') {
   })
 }
 
-// AutoUpdater
-autoUpdater.on('update-available', (info) => {
-  logger.info('update-available', JSON.stringify(info))
-  let {version} = info
-  if (win && version) win.webContents.send('update-available', version)
-})
-
-autoUpdater.on('update-not-available', (info) => {
-  logger.info('update-not-available', JSON.stringify(info))
-})
-
 // Scheme must be registered before the app is ready
 protocol.registerSchemesAsPrivileged([{scheme: 'app', privileges: { secure: true, standard: true } }])
 
-function createWindow () {
+function createMainWindow () {
   // Create the browser window.
   let w = 1024
-  let h = 840
+  let h = 800
 
   if (process.platform === 'win32') {
     h += 30  //for menu bar
@@ -120,6 +112,9 @@ function createWindow () {
     show: false,
     width: w,
     height: h,
+    minWidth: w,
+    minHeight: h,
+    useContentSize: true,
     webPreferences: {
       nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,
       enableRemoteModule: true
@@ -138,10 +133,159 @@ function createWindow () {
 
   win.on('closed', () => {
     win = null
+    if (winGeneral) {
+      winGeneral.close()
+    }
+    if (winSensor) {
+      winSensor.close()
+    }
   })
 
   win.once('ready-to-show', () => {
     win.show()
+    scheduleOpenGeneralWindow()
+    scheduleOpenSensorWindow()
+  })
+}
+
+
+function scheduleOpenGeneralWindow() {
+  if (!winGeneralStartTimer) {
+    winGeneralStartTimer = setTimeout(() => {
+      winGeneralStartTimer = null
+      if (!winGeneral) {
+        createGeneralWindow(false)
+      } else {
+        logger.debug(`winGeneralStartTimer: winGeneral already created, skip ...`)
+      }
+    }, 200)
+  }
+}
+
+function createGeneralWindow (showAfterCreated = false) {
+  // Create the browser window.
+  let w = 900
+  let h = 700
+
+  if (process.platform === 'win32') {
+    h += 30  //for menu bar
+  }
+
+  winGeneral = new BrowserWindow({
+    show: false,
+    width: w,
+    height: h,
+    minWidth: w,
+    minHeight: h,
+    useContentSize: true,
+    webPreferences: {
+      nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,
+      enableRemoteModule: true
+    },
+    // menuBarVisible: false,
+    // skipTaskbar: true,
+  })
+  winGeneral.setMenuBarVisibility(false)
+
+  if (process.env.WEBPACK_DEV_SERVER_URL) {
+    // Load the url of the dev server if in development mode
+    winGeneral.loadURL(process.env.WEBPACK_DEV_SERVER_URL + "general.html")
+    logger.debug(`load the general windows from dev server...`)
+    if (!process.env.IS_TEST) winGeneral.webContents.openDevTools()
+  } else {
+    // Load the index.html when not in development
+    winGeneral.loadURL('app://./general.html')
+  }
+
+  winGeneral.on('close', (e) => {
+    if (win) {
+      logger.debug(`winGeneral is going to be closed, but we skip that`)
+      e.preventDefault()
+      winGeneral.hide()
+    } else {
+      logger.debug(`winGeneral is going to be closed, since win = null`)
+    }
+  })
+
+  winGeneral.on('closed', () => {
+    winGeneral = null
+  })
+
+  winGeneral.once('ready-to-show', () => {
+    logger.debug(`winGeneral is ready to show`)
+    if (showAfterCreated) {
+      winGeneral.show()
+    }
+  })
+}
+
+function scheduleOpenSensorWindow() {
+  if (!winSensorStartTimer) {
+    winSensorStartTimer = setTimeout(() => {
+      winSensorStartTimer = null
+      if (!winSensor) {
+        createSensorWindow(false)
+      } else {
+        logger.debug(`winSensorStartTimer: winSensor already created, skip ...`)
+      }
+    }, 500)
+  }
+}
+
+function createSensorWindow (showAfterCreated = false) {
+  // Create the browser window.
+  let w = 1024
+  let h = 800
+
+  if (process.platform === 'win32') {
+    h += 30  //for menu bar
+  }
+
+  winSensor = new BrowserWindow({
+    show: false,
+    width: w,
+    height: h,
+    minWidth: w,
+    minHeight: h,
+    useContentSize: true,
+    webPreferences: {
+      nodeIntegration: process.env.ELECTRON_NODE_INTEGRATION,
+      enableRemoteModule: true
+    },
+    // menuBarVisible: false,
+    // skipTaskbar: true,
+  })
+  winSensor.setMenuBarVisibility(false)
+
+  if (process.env.WEBPACK_DEV_SERVER_URL) {
+    // Load the url of the dev server if in development mode
+    winSensor.loadURL(process.env.WEBPACK_DEV_SERVER_URL + "sensor.html")
+    logger.debug(`load the Sensor window from dev server...`)
+    if (!process.env.IS_TEST) winSensor.webContents.openDevTools()
+  } else {
+    // Load the index.html when not in development
+    winSensor.loadURL('app://./sensor.html')
+  }
+
+  winSensor.on('close', (e) => {
+    if (win) {
+      logger.debug(`winSensor is going to be closed, but we skip that`)
+      e.preventDefault()
+      winSensor.hide()
+    } else {
+      logger.debug(`winSensor is going to be closed, since win = null`)
+    }
+  })
+
+  winSensor.on('closed', () => {
+    winSensor = null
+  })
+
+  winSensor.once('ready-to-show', () => {
+    logger.debug(`winSensor is ready to show`)
+    if (showAfterCreated) {
+      winSensor.show()
+    }
   })
 }
 
@@ -149,17 +293,17 @@ function createWindow () {
 app.on('window-all-closed', () => {
   // On macOS it is common for applications and their menu bar
   // to stay active until the user quits explicitly with Cmd + Q
-  if (process.platform !== 'darwin') {
+  // if (process.platform !== 'darwin') {
     serialClose()
     app.quit()
-  }
+  // }
 })
 
 app.on('activate', () => {
   // On macOS it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
   if (win === null) {
-    createWindow()
+    createMainWindow()
   }
 })
 
@@ -176,21 +320,12 @@ app.on('ready', async () => {
   await translateMenu()
 
   if (isDevelopment && !process.env.IS_TEST) {
-    // Install Vue Devtools
-    // Devtools extensions are broken in Electron 6.0.0 and greater
-    // See https://github.com/nklayman/vue-cli-plugin-electron-builder/issues/378 for more info
-    // Electron will not launch with Devtools extensions installed on Windows 10 with dark mode
-    // If you are not using Windows 10 dark mode, you may uncomment these lines
-    // In addition, if the linked issue is closed, you can upgrade electron and uncomment these lines
-    // try {
-    //   await installVueDevtools()
-    // } catch (e) {
-    //   console.error('Vue Devtools failed to install:', e.toString())
-    // }
-
+    let name = await installExtension(VUEJS_DEVTOOLS)
+    logger.debug(`Added Extension:  ${name}`)
+    logger.debug(`process.env.WEBPACK_DEV_SERVER_URL: ${process.env.WEBPACK_DEV_SERVER_URL}`)
   }
 
-  createWindow()
+  createMainWindow()
 
   autoUpdateTimeHandler = setTimeout(() => {
     autoUpdater.checkForUpdatesAndNotify()
@@ -203,6 +338,8 @@ if (isDevelopment) {
   if (process.platform === 'win32') {
     process.on('message', data => {
       if (data === 'graceful-exit') {
+        serialClose()
+        ipcMain.removeAllListeners()
         app.quit()
       }
     })
@@ -215,7 +352,7 @@ if (isDevelopment) {
   }
 }
 
-// IPC
+// Serial
 ipcMain.on('init-serial-req', (event, arg) => {
   logger.info('init-serial-req ...')
 
@@ -328,6 +465,23 @@ ipcMain.on('serial-rx', (event, arg) => {
   }
 })
 
+async function sendToTerm(str) {
+  if (win) {
+    await win.webContents.send('serial-tx', str)
+  }
+}
+
+// App self update, AutoUpdater
+autoUpdater.on('update-available', (info) => {
+  logger.info('update-available', JSON.stringify(info))
+  let {version} = info
+  if (win && version) win.webContents.send('update-available', version)
+})
+
+autoUpdater.on('update-not-available', (info) => {
+  logger.info('update-not-available', JSON.stringify(info))
+})
+
 ipcMain.on('current-version-req', (event, arg) => {
   logger.info('current-version-req ...')
   let currentVersion = autoUpdater.currentVersion.version
@@ -335,12 +489,8 @@ ipcMain.on('current-version-req', (event, arg) => {
   event.reply('current-version-resp', {currentVersion: currentVersion})
 })
 
-async function sendToTerm(str) {
-  if (win) {
-    await win.webContents.send('serial-tx', str)
-  }
-}
 
+// yModem Fw Update
 let updateTimeoutHandler
 async function progressCallback(val) {
   let percent = `${val.toFixed(1)}%`
@@ -435,7 +585,78 @@ ipcMain.on('locale-change', (event, arg) => {
   translateMenu()
 })
 
+// System Call
 ipcMain.on('goto-new-version', (event) => {
   shell.openExternal('https://github.com/Seeed-Solution/SenseCAP-Sensor-Hub-Configuration-Tool/releases/latest')
 })
+
+//Other Windows and Windows Communication
+ipcMain.on('open-general-window', (event) => {
+  logger.info('ipc: open-general-window ...')
+  if (winGeneral) {
+    winGeneral.show()
+    winGeneral.focus()
+  } else {
+    createGeneralWindow(true)
+  }
+})
+ipcMain.on('close-general-window', (event) => {
+  logger.info('ipc: close-general-window ...')
+  if (winGeneral) {
+    winGeneral.hide()
+    //winGeneral.close()
+  }
+})
+ipcMain.on('open-sensor-window', (event) => {
+  logger.info('ipc: open-sensor-window ...')
+  if (winSensor) {
+    winSensor.show()
+    winSensor.focus()
+  } else {
+    createSensorWindow(true)
+  }
+})
+ipcMain.on('close-sensor-window', (event) => {
+  logger.info('ipc: close-sensor-window ...')
+  if (winSensor) {
+    winSensor.hide()
+    //winSensor.close()
+  }
+})
+
+function broadcastMultiWindows(eventName, eventValue, ...windows) {
+  for (const w of windows) {
+    if (w && w instanceof BrowserWindow) {
+      logger.debug(`send event ${eventName} = ${eventValue} to `, w.title)
+      w.webContents.send(eventName, eventValue)
+    }
+  }
+}
+
+ipcMain.on('broadcast-to-others', (event, eventName, ...args) => {
+  let windows = [win, winGeneral, winSensor]
+  let wContent = event.webContents
+  logger.info('broadcast-to-others:', eventName)
+  for (const w of windows) {
+    if (w && w instanceof BrowserWindow) {
+      if (w.webContents === wContent) continue
+      logger.debug(`going to broadcast event ${eventName} to `, w.title)
+      w.webContents.send(eventName, ...args)
+    }
+  }
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

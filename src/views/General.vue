@@ -46,120 +46,129 @@
 }
 </i18n>
 <template>
-  <v-container fluid class="py-0" fill-height>
-    <v-row class="main-body-fill-height">
-      <!-- 左半屏，输入框 -->
-      <v-col cols="4" lg="3" xl="2">
-        <v-row class="pt-1">
+  <v-container fluid class="py-0">
+    <v-row>
+      <v-col cols="12">
+        <v-form ref="form1">
+          <v-row class="pt-1">
           <!-- Fields -->
-          <!-- connection -->
-          <v-col cols="12" class="d-flex justify-space-around">
-            <v-select v-model="selectedSerialPort" :label="$t('Serial Port')"
-              :items="serialPorts"
-              :disabled="serialVSelectDisable"
-              @focus="onSerialVSelectClicked"
-              outlined dense hide-details>
-            </v-select>
+          <!-- eui & key -->
+          <v-col cols="6" class="pb-0">
+            <v-text-field v-model="deviceEUI" :label="$t('Device EUI')"
+              :rules="deviceEUIRules" outlined dense>
+            </v-text-field>
           </v-col>
-          <v-col cols="12" class="py-0 d-flex justify-start">
-            <v-checkbox class="pt-0 mt-0"
-              v-model="connectAsConfigMode"
-              @change="configModeChangedFn"
-              dense hide-details></v-checkbox>
-            <p class="text-caption">{{$t('text: connectAsConfigMode')}}</p>
+          <v-col cols="6" class="py-0">
+            <v-text-field v-model="appKey" v-if="showHiddenCfg" :label="$t('App Key')"
+              :rules="appKeyRules" outlined dense>
+            </v-text-field>
           </v-col>
-          <v-col cols="12" class="d-flex justify-space-around">
-            <v-btn rounded :color="connectBtnColor" width="200"
-              @click="ConnectFn"
-              dense>{{connectBtnText}}</v-btn>
+          <!-- cellular -->
+          <v-col cols="6" class="py-0">
+            <v-text-field v-model="cardIccid" :label="$t('Card ICCID')"
+              disabled outlined dense>
+            </v-text-field>
           </v-col>
-          <v-col cols="12" class="d-flex justify-space-around">
-            <v-divider></v-divider>
+          <v-col cols="6" class="py-0 d-flex justify-start align-start">
+            <v-text-field v-model="signalRssi" :label="$t('Signal RSSI')"
+              suffix="dBm"
+              disabled outlined dense>
+            </v-text-field>
+            <v-icon class="align-self-start mt-2 ml-2">mdi-signal-cellular-{{signalIndex}}</v-icon>
           </v-col>
-
+          <!-- interval -->
+          <v-col cols="6" class="py-0">
+            <v-text-field v-model.number="dataInterval" type="number" :label="$t('Data Interval')"
+              :rules="dataIntervalRules"
+              :suffix="$t('minutes')" outlined dense>
+            </v-text-field>
+          </v-col>
+          <!-- battery info -->
+          <v-col cols="6"  class="py-0">
+            <v-text-field v-model.number="battery" type="number" :label="$t('Battery')"
+              suffix="%" disabled outlined dense>
+            </v-text-field>
+          </v-col>
+          <!-- mqtt config -->
+          <v-col cols="6" class="pb-0">
+            <v-text-field v-model="serverAddr" :label="$t('Server Address')"
+              @change="serverAddrChangedFn"
+              :rules="serverAddrRules"
+              outlined dense>
+            </v-text-field>
+          </v-col>
+          <v-col cols="6" class="pb-0">
+            <v-text-field v-model.number="serverPort" type="number" :label="$t('Server Port')"
+              :rules="serverPortRules"
+              outlined dense>
+            </v-text-field>
+          </v-col>
+          <v-col cols="6" class="py-0">
+            <v-text-field v-model="username" :label="$t('Username')"
+              :rules="[rules.char32AllowEmtpy]"
+              outlined dense>
+            </v-text-field>
+          </v-col>
+          <v-col cols="6" class="py-0">
+            <v-text-field v-model="password" :label="$t('Password')"
+              :rules="[rules.char32AllowEmtpy]"
+              outlined dense>
+            </v-text-field>
+          </v-col>
+          <!-- gps & ota switch -->
+          <v-col cols="6" class="py-0">
+            <v-switch v-model="enableGps" :label="$t('Enable GPS')" class="mt-0"
+              outlined dense>
+            </v-switch>
+          </v-col>
+          <v-col cols="6" class="py-0">
+            <v-switch v-model="enableOtaPrepub" v-if="showHiddenCfg" :label="$t('OTA Prepub')" class="mt-0"
+              outlined dense>
+            </v-switch>
+          </v-col>
+          <!-- APN for 4G -->
+          <v-col cols="6" class="py-0">
+            <v-text-field v-model="apn" :label="$t('APN')"
+              :rules="[rules.char32AllowEmtpy]" outlined dense>
+            </v-text-field>
+          </v-col>
+          <v-col cols="6" class="py-0"></v-col>
+          <v-col cols="6" class="py-0">
+            <v-text-field v-model="apnUsername" :label="$t('APN Username')"
+              :rules="[rules.char32AllowEmtpy]"
+              outlined dense>
+            </v-text-field>
+          </v-col>
+          <v-col cols="6" class="py-0">
+            <v-text-field v-model="apnPassword" :label="$t('APN Password')"
+              :rules="[rules.char32AllowEmtpy]"
+              outlined dense>
+            </v-text-field>
+          </v-col>
+          <!-- hw & sw info -->
+          <v-col cols="6" class="py-0">
+            <v-text-field v-model="hwVer" :label="$t('Hardware Version')" disabled outlined dense>
+            </v-text-field>
+          </v-col>
+          <v-col cols="6" class="py-0">
+            <v-text-field v-model="swVer" :label="$t('Software Version')" disabled outlined dense>
+            </v-text-field>
+          </v-col>
           <!-- Buttons -->
-          <v-col cols="12" class="d-flex justify-space-around">
-            <v-btn rounded color="secondary" width="200"
-              @click.stop="openGeneralSettingFn()"
-              :loading="generalSettingsLoading"
-              :disabled="btnDisabled"
-            >{{$t('General Settings')}}</v-btn>
-          </v-col>
-          <v-col cols="12" class="d-flex justify-space-around">
-            <v-btn rounded color="secondary" width="200"
-              @click.stop="openSensorSettingFn()"
-              :loading="sensorSettingsLoading"
-              :disabled="btnDisabled"
-            >{{$t('Sensor Settings')}}</v-btn>
-          </v-col>
-          <v-col cols="12" class="d-flex justify-space-around">
-            <v-btn rounded color="secondary" width="200"
-              @click.stop="updateFwFn()"
-              :loading="updateFwLoading"
-              :disabled="btnDisabled"
-            >{{$t('Update Firmware')}}</v-btn>
-          </v-col>
-          <v-col cols="12" class="d-flex justify-space-around">
-            <v-btn rounded color="secondary" width="200"
-              @click.stop="ClearDataFn()"
-              :loading="clearCacheLoading"
-              :disabled="btnDisabled"
-            >{{$t('Clear Data')}}</v-btn>
+          <v-col cols="12" class="py-0 d-flex justify-start">
+            <v-spacer></v-spacer>
+            <v-btn rounded color="secondary" width="100" class="mr-5"
+              @click.stop="readFn()"
+              :disabled="!serialOpened">{{$t('Read')}}</v-btn>
+            <v-btn rounded color="secondary" width="100" class="mr-3"
+              @click.stop="writeFn()"
+              :loading="writeLoading"
+              :disabled="!serialOpened">{{$t('Write')}}</v-btn>
           </v-col>
         </v-row>
-      </v-col>
-      <!-- 右半屏，console -->
-      <v-col>
-        <v-card outlined class="pl-2 pt-0" height="100%">
-          <div style="height:100%" id="terminal"></div>
-        </v-card>
+        </v-form>
       </v-col>
     </v-row>
-    <!-- footer -->
-    <v-row>
-      <v-col cols="12" class="pa-0">
-        <v-divider></v-divider>
-      </v-col>
-    </v-row>
-    <v-row>
-      <v-col cols="auto" class="d-flex flex-column align-center justify-center">
-        <div style="width: 40px">
-          <v-menu top offset-y close-on-click>
-            <template v-slot:activator="{ on }">
-              <span class="flag-icon" :class="flagIconClass" v-on="on"></span>
-            </template>
-            <v-list dense class="pa-0">
-              <v-list-item-group v-model="locale">
-                <v-list-item key="item1" class="py-0" link style="min-height: 30px;" value="en">
-                  <v-list-item-title class="caption">English</v-list-item-title>
-                </v-list-item>
-                <v-list-item key="item2" class="py-0" link style="min-height: 30px;" value="zh">
-                  <v-list-item-title class="caption">简体中文</v-list-item-title>
-                </v-list-item>
-              </v-list-item-group>
-            </v-list>
-          </v-menu>
-        </div>
-      </v-col>
-      <v-col class="d-flex justify-center">
-        <div>
-          <v-img src="../assets/sensecap.png" width="100px" @click.stop="logoClicked()"></v-img>
-        </div>
-      </v-col>
-      <v-col cols="auto" class="d-flex flex-column align-center justify-center caption grey--text">
-        <div>
-          <v-tooltip top open-delay="1000" :disabled="!newVersion">
-            <template v-slot:activator="{ on }">
-              <v-badge color="pink" dot top :value="newVersion">
-                <span v-on="on" @click="versionClicked()" id="versionText">v{{currentVersion}}</span>
-              </v-badge>
-            </template>
-            <span>v{{newVersion}} available</span>
-          </v-tooltip>
-        </div>
-      </v-col>
-    </v-row>
-
     <!-- dialog -->
     <v-dialog
       v-model="dialog"
@@ -183,25 +192,13 @@
   </v-container>
 </template>
 
-<style scoped>
-.main-body-fill-height {
-  height: calc(100% - 60px);
-}
-</style>
-<style>
-.xterm .xterm-viewport {
-  overflow-y: auto !important;
-}
-</style>
-
 <script>
-// @ is an alias to /src
-// import HelloWorld from '@/components/HelloWorld.vue'
 import { Terminal } from 'xterm'
 import { FitAddon } from 'xterm-addon-fit'
 import 'xterm/css/xterm.css'
 const { ipcRenderer } = require('electron')
 const { Readable } = require('stream')
+const RegexParser = require('@serialport/parser-regex')
 const ReadlineParser = require('@serialport/parser-readline')
 const Store = require('electron-store');
 const store = new Store();
@@ -211,20 +208,78 @@ const delayMs = ms => new Promise(res => setTimeout(res, ms))
 export default {
   name: 'Home',
   data() {
+    let rules = {
+      required: value => !!value || this.$t("Required."),
+      rangeWAN: value => (value >= 5 && value <=43200) || this.$t("Must between [5, 43200]"),
+      rangePP: value => (value >= 5 && value <=720) || this.$t("Must between [5, 720]"),
+      rangeSH: value => (value >= 1 && value <=43200) || this.$t("Must between [1, 43200]"),
+      rangePort: value => (value >= 1 && value <=65535) || this.$t("Must between [1, 65535]"),
+      int: value => (/\.+/.test(value)) ? this.$t("Must be integer.") : true,
+      eui16: value => (/^\w{16}$/.test(value)) || this.$t("Invalid LoRaWAN EUI (16 chars)"),
+      eui32: value => (/^\w{32}$/.test(value)) || this.$t("Invalid LoRaPP EUI (32 chars)"),
+      char32AllowEmtpy: value => {
+        if (value) return (/^\S{1,32}$/i.test(value)) || this.$t("Maximum 32 chars allowed")
+        else return true
+      },
+      domain: value => (/(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9][a-z0-9-]{0,61}[a-z0-9]/i.test(value)) || (/^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$/.test(value)) || this.$t("Invalid domain"),
+    }
     return {
-      //global
-      menuContext: 'home',  //home, general, sensor
+      //rules
+      rules: rules,
+      deviceEUIRules: [rules.required, rules.eui16],
+      appEUIRules: [rules.required, rules.eui16],
+      appKeyRules: [rules.required, rules.eui32],
+      dataIntervalRules: [rules.int, rules.rangeSH],
+      serverAddrRules: [],
+      serverPortRules: [],
       //loading
-      generalSettingsLoading: false,
-      sensorSettingsLoading: false,
+      writeLoading: false,
       updateFwLoading: false,
       clearCacheLoading: false,
-      //serial
+      //
+      // connectBtnText: this.$t('Connect'),
+      // connectBtnColor: 'secondary',
+      // serialVSelectDisable: false,
       selectedSerialPort: null,
       serialPorts: [],
       serialOpened: false,
       connectAsConfigMode: false,
       showHiddenCfg: false,
+      //config fields
+      labelAppEUI: 'App EUI',
+      labelAppKey: 'App Key',
+      deviceEUI: '',
+      deviceEUI2: '',
+      appEUI: '',
+      appEUI2: '',
+      appKey: '',
+      appKey2: '',
+      cardIccid: '',
+      signalRssi: -120,
+      signalIndex: 'outline', //1,2,3,outline
+      dataInterval: 60,
+      dataInterval2: 60,
+      battery: 100,
+      serverAddr: '',
+      serverAddr2: '',
+      serverPort: 1883,
+      serverPort2: 1883,
+      username: '',
+      username2: '',
+      password: '',
+      password2: '',
+      enableGps: true,
+      enableGps2: true,
+      enableOtaPrepub: false,
+      enableOtaPrepub2: false,
+      apn: '',
+      apn2: '',
+      apnUsername: '',
+      apnUsername2: '',
+      apnPassword: '',
+      apnPassword2: '',
+      hwVer: '',
+      swVer: '',
       //stream parse
       stream: null,
       pauseParseLine: false,
@@ -252,6 +307,15 @@ export default {
       store.set('chosenLocale', newVal)
       ipcRenderer.send('locale-change', newVal)
     },
+    signalRssi(newVal, oldVal) {
+      console.log('signalRssi newVal:', newVal, ', oldVal:', oldVal)
+      if (newVal === oldVal || !newVal) return
+      let rssi = parseInt(newVal)
+      if (rssi > -71) this.signalIndex = '3'
+      else if (rssi > -91 && rssi <= -71) this.signalIndex = '2'
+      else if (rssi > -113 && rssi <= -91) this.signalIndex = '1'
+      else if (rssi <= -113) this.signalIndex = 'outline'
+    }
   },
   computed: {
     flagIconClass: function() {
@@ -265,10 +329,6 @@ export default {
     },
     serialVSelectDisable: function() {
       return this.serialOpened
-    },
-    btnDisabled: function () {
-      return !this.serialOpened || !this.connectAsConfigMode || this.updateFwLoading || this.clearCacheLoading
-      || this.generalSettingsLoading || this.sensorSettingsLoading || this.menuContext !== 'home';
     }
   },
   methods: {
@@ -277,21 +337,13 @@ export default {
       return true
     },
     ConnectFn() {
-      console.log('start to connect:', this.selectedSerialPort)
+      console.log(this.selectedSerialPort)
       if (!this.selectedSerialPort) return
       if (!this.serialOpened) {
         ipcRenderer.send('serial-open-req', this.selectedSerialPort)
       } else {
         ipcRenderer.send('serial-close-req')
       }
-    },
-    openGeneralSettingFn() {
-      console.log('going to send IPC open-general-window')
-      ipcRenderer.send('open-general-window')
-    },
-    openSensorSettingFn() {
-      console.log('going to send IPC open-sensor-window')
-      ipcRenderer.send('open-sensor-window')
     },
     readFn() {
       ipcRenderer.send('serial-rx', '\r\nh')
@@ -698,7 +750,7 @@ export default {
       },
       fontSize: 12,
       cursorBlink: true,
-      scrollback: 5000,
+
     })
     const fitAddon = new FitAddon()
     this.term.loadAddon(fitAddon)
@@ -785,5 +837,12 @@ export default {
   beforeDestroy() {
     ipcRenderer.removeAllListeners()
   }
+
 }
 </script>
+<style scoped>
+.mytextarea {
+  font-size: 12px;
+  line-height: 12px;
+}
+</style>

@@ -1,0 +1,28 @@
+/*
+Write your variables here. All available variables can be
+found in element-ui/packages/theme-chalk/src/common/var.scss.
+For example, to overwrite the theme color:
+*/
+$--color-primary: #15780F;
+$--color-secondary: #205C71;
+
+//$--font-size-extra-large: 18px;
+//$--font-size-large: 16px;
+//$--font-size-medium: 14px;
+//$--font-size-base: 12px;
+//$--font-size-small: 11px;
+//$--font-size-extra-small: 10px;
+//$--font-line-height-primary: 22px;
+//$--font-line-height-secondary: 14px;
+//$--size-base: 12px;
+//
+//$--card-padding: 15px;
+
+/* icon font path, required */
+$--font-path: '~element-ui/lib/theme-chalk/fonts';
+
+@import "~element-ui/packages/theme-chalk/src/index";
+
+.el-scrollbar__bar.is-horizontal {
+  display: none;
+}

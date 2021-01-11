@@ -2,6 +2,36 @@ module.exports = {
   "transpileDependencies": [
     "vuetify"
   ],
+  pages: {
+    index: {
+      // entry for the page
+      entry: 'src/main.js',
+      // the source template
+      template: 'public/index.html',
+      // output as dist/index.html
+      filename: 'index.html',
+      // when using title option,
+      // template title tag needs to be <title><%= htmlWebpackPlugin.options.title %></title>
+      title: 'SenseCAP Sensor Hub Configuration Tool',
+      // chunks to include on this page, by default includes
+      // extracted common chunks and vendor chunks.
+      chunks: ['chunk-vendors', 'chunk-common', 'index']
+    },
+    general: {
+      entry: 'src/main-general.js',
+      template: 'public/index.html',
+      filename: 'general.html',
+      title: 'SenseCAP One Configuration Tool - General',
+      chunks: ['chunk-vendors', 'chunk-common', 'general']
+    },
+    sensor: {
+      entry: 'src/main-sensor.js',
+      template: 'public/index.html',
+      filename: 'sensor.html',
+      title: 'SenseCAP One Configuration Tool - Sensor',
+      chunks: ['chunk-vendors', 'chunk-common', 'sensor']
+    },
+  },
   chainWebpack: config => {
     config.module
       .rule("i18n")

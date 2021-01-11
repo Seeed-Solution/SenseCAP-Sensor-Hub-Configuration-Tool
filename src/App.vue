@@ -1,8 +1,8 @@
 <template>
   <v-app>
-    <v-content >
+    <v-main>
       <router-view/>
-    </v-content>
+    </v-main>
   </v-app>
 </template>
 
@@ -21,3 +21,18 @@ export default {
   }),
 };
 </script>
+
+<style>
+#app {
+  padding: 0px;
+  /* this makes padding included inside height/width */
+  box-sizing: border-box;
+  margin: 0px;
+  height: 100%;
+}
+.v-main, .v-main__wrap {
+  padding: 0px;
+  margin: 0px;
+  height: 100%;
+}
+</style>

@@ -5,13 +5,19 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
     <link rel="icon" href="<%= BASE_URL %>favicon.ico">
-    <title>SenseCAP Sensor Hub Configuration Tool</title>
+    <title><%= htmlWebpackPlugin.options.title %></title>
     <style>
-      body {
-        overflow-x: hidden;
+      /*hide the scrollbar by default since this is an electron app*/
+      html {
+        overflow: hidden !important;
+        padding: 0px;
+        margin: 0px;
+        height: 100%;
       }
-      ::-webkit-scrollbar {
-        display: none;
+      body {
+        padding: 0px;
+        margin: 0px;
+        height: 100%;
       }
     </style>
   </head>
